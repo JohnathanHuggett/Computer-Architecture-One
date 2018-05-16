@@ -1,0 +1,10 @@
+# dec.ls8
+
+10011001 # LDI R0, 18  Load R0 with value 18
+00000000
+00010010
+01111001 # DEC R0, Decrements R0, storing result in R0
+00000000
+01000011 # PRN R0    Print value in R0
+00000000
+00000001 # HLT       Halt
