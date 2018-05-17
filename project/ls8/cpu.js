@@ -17,7 +17,11 @@ const LDI = 0b10011001,
     INC = 0b01111000,
     DEC = 0b01111001,
     POP = 0b01001100,
-    PUSH = 0b01001101;
+    PUSH = 0b01001101,
+    CALL = 0b01001000,
+    RET = 0b00001001;
+
+const SP = 7;
 
 class CPU {
     /**
@@ -27,6 +31,8 @@ class CPU {
         this.ram = ram;
 
         this.reg = new Array(8).fill(0); // General-purpose registers R0-R7
+
+        this.reg[SP] = 244;
 
         // Special-purpose registers
         this.PC = 0; // Program Counter
@@ -44,6 +50,8 @@ class CPU {
         this.handler[DEC] = this.handle_DEC.bind(this);
         this.handler[POP] = this.handle_POP.bind(this);
         this.handler[PUSH] = this.handle_PUSH.bind(this);
+        this.handler[CALL] = this.handle_CALL.bind(this);
+        this.handler[RET] = this.handle_RET.bind(this);
     }
 
     /**
@@ -119,7 +127,6 @@ class CPU {
         // IR: Instruction Register, contains a copy of the currently executing instruction
 
         const IR = this.ram.read(this.PC);
-        const stackPointer = (this.reg[this.reg.length - 1] = 243);
 
         // Debugging output
         // console.log(`${this.PC}: ${IR.toString(2)}`);
@@ -140,8 +147,9 @@ class CPU {
         // can be 1, 2, or 3 bytes long. Hint: the high 2 bits of the
         // instruction byte tells you how many bytes follow the instruction byte
         // for any particular instruction.
-
-        this.PC += (IR >> 6) + 1;
+        if (IR !== CALL && IR !== RET) {
+            this.PC += (IR >> 6) + 1;
+        }
     }
 
     handle_LDI(operandA, operandB) {
@@ -181,13 +189,24 @@ class CPU {
     }
 
     handle_PUSH(operandA, operandB) {
-        this.stackPointer--; // 243 - 1 = 242
+        this.stackPointer--; // 243 - 1 = 242 reset
         this.ram.write(this.stackPointer, this.reg[operandA]);
     }
 
     handle_POP(operandA, operandB) {
         this.reg[operandA] = this.ram.read(this.stackPointer); // 1 | 2
         this.stackPointer++; // 242 + 1 = 243 back to the top of the stack
+    }
+
+    handle_CALL(operandA, operandB) {
+        this.reg[SP]--;
+        this.ram.write(this.reg[SP], this.PC + 2);
+        this.PC = this.reg[operandA];
+    }
+
+    handle_RET(operandA, operandB) {
+        this.PC = this.ram.read(this.reg[SP]);
+        this.reg[SP]++;
     }
 }
 

@@ -38,3 +38,24 @@ let cpu = new CPU(ram);
 loadMemory(cpu);
 
 cpu.startClock();
+
+// const fs = require('fs');
+
+// const argv = process.argv.slice(1);
+
+// let filename = argv[1];
+// if (!filename) {
+//   console.log('usage: [filename]');
+//   process.exit(1);
+// }
+// if (!filename.endsWith('.ls8')) {
+//   filename = filename + '.ls8';
+// }
+
+// const filedata = fs.readFileSync(filename, 'utf8');
+
+// const lines = filedata
+//   .split('\n')
+//   .filter(line => line.startsWith('0') || line.startsWith('1'))
+//   .map(line => line.split('#'))
+//   .map(line => line[0].trim());
