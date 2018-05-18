@@ -19,7 +19,12 @@ const LDI = 0b10011001,
     POP = 0b01001100,
     PUSH = 0b01001101,
     CALL = 0b01001000,
-    RET = 0b00001001;
+    RET = 0b00001001,
+    ST = 0b10011010,
+    CMP = 0b10100000,
+    JEQ = 0b01010001,
+    JNE = 0b01010010,
+    JMP = 0b01010000;
 
 const SP = 7;
 
@@ -33,6 +38,8 @@ class CPU {
         this.reg = new Array(8).fill(0); // General-purpose registers R0-R7
 
         this.reg[SP] = 244;
+
+        this.FL = 0;
 
         // Special-purpose registers
         this.PC = 0; // Program Counter
@@ -52,6 +59,11 @@ class CPU {
         this.handler[PUSH] = this.handle_PUSH.bind(this);
         this.handler[CALL] = this.handle_CALL.bind(this);
         this.handler[RET] = this.handle_RET.bind(this);
+        this.handler[ST] = this.handle_ST.bind(this);
+        this.handler[CMP] = this.handle_CMP.bind(this);
+        this.handler[JEQ] = this.handle_JEQ.bind(this);
+        this.handler[JNE] = this.handle_JNE.bind(this);
+        this.handler[JMP] = this.handle_JMP.bind(this);
     }
 
     /**
@@ -113,6 +125,18 @@ class CPU {
             case "DEC":
                 this.reg[regA]--;
                 break;
+
+            case "CMP":
+                if (this.reg[regA] === this.reg[regB]) {
+                    this.FL = 1;
+                } else if (this.reg[regA] < this.reg[regB]) {
+                    this.FL = 4;
+                } else if (this.reg[regA] > this.reg[regB]) {
+                    this.FL = 2;
+                } else {
+                    this.FL = 0;
+                }
+                break;
         }
     }
 
@@ -147,7 +171,7 @@ class CPU {
         // can be 1, 2, or 3 bytes long. Hint: the high 2 bits of the
         // instruction byte tells you how many bytes follow the instruction byte
         // for any particular instruction.
-        if (IR !== CALL && IR !== RET) {
+        if (IR !== CALL && IR !== RET && IR !== JEQ && IR !== JMP && IR !== JNE) {
             this.PC += (IR >> 6) + 1;
         }
     }
@@ -189,13 +213,13 @@ class CPU {
     }
 
     handle_PUSH(operandA, operandB) {
-        this.stackPointer--; // 243 - 1 = 242 reset
-        this.ram.write(this.stackPointer, this.reg[operandA]);
+        this.reg[SP]--; // 243 - 1 = 242 reset
+        this.ram.write(this.reg[SP], this.reg[operandA]);
     }
 
     handle_POP(operandA, operandB) {
-        this.reg[operandA] = this.ram.read(this.stackPointer); // 1 | 2
-        this.stackPointer++; // 242 + 1 = 243 back to the top of the stack
+        this.reg[operandA] = this.ram.read(this.reg[SP]); // 1 | 2
+        this.reg[SP]++; // 242 + 1 = 243 back to the top of the stack
     }
 
     handle_CALL(operandA, operandB) {
@@ -207,6 +231,34 @@ class CPU {
     handle_RET(operandA, operandB) {
         this.PC = this.ram.read(this.reg[SP]);
         this.reg[SP]++;
+    }
+
+    handle_ST(operandA, operandB) {
+        this.ram.write(this.reg[operandA], this.reg[operandB]);
+    }
+
+    handle_CMP(operandA, operandB) {
+        this.alu("CMP", operandA, operandB);
+    }
+
+    handle_JEQ(operandA) {
+        if (this.FL === 1) {
+            this.PC = this.reg[operandA];
+        } else {
+            this.PC += 2;
+        }
+    }
+
+    handle_JNE(operandA) {
+        if (this.FL !== 1) {
+            this.PC = this.reg[operandA];
+        } else {
+            this.PC += 2;
+        }
+    }
+
+    handle_JMP(operandA) {
+        this.PC = this.reg[operandA];
     }
 }
 
